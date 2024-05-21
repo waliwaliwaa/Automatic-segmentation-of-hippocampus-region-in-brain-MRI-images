@@ -15,9 +15,9 @@ def main(file_path):
     data = img.get_fdata()
 
     # Select slices to display
-    slice_0 = data[data.shape[0] // 2, :, :]  # Middle slice in the first dimension
-    slice_1 = data[:, data.shape[1] // 2, :]  # Middle slice in the second dimension
-    slice_2 = data[:, :, data.shape[2] // 2]  # Middle slice in the third dimension
+    slice_0 = data[data.shape[0] // 2, :, :] 
+    slice_1 = data[:, data.shape[1] // 2, :]
+    slice_2 = data[:, :, data.shape[2] // 2] 
 
     # Display slices
     display_slices([slice_0, slice_1, slice_2])
