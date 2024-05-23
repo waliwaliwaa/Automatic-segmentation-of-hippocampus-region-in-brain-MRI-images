@@ -1,7 +1,7 @@
 import os
 import cv2
 
-input_dir = 'dataset/pngs/RawPng'
+input_dir = 'dataset/pngs/RawAll'
 output_dir = 'dataset/pngs/RawGauss'
 
 

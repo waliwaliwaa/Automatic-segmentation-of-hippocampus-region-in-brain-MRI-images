@@ -4,14 +4,14 @@ from sklearn.model_selection import train_test_split
 
 data_dir = 'dataset'
 image_dir = "dataset/pngs/RawGauss"
-mask_dir = "dataset/pngs/AffinedPng"
+mask_dir = "dataset/pngs/MaskAll"
 
 image_files = sorted([f for f in os.listdir(image_dir) if f.endswith('.png')])
 mask_files = sorted([f for f in os.listdir(mask_dir) if f.endswith('.png')])
 
 assert len(image_files) == len(mask_files)
 for img_file, mask_file in zip(image_files, mask_files):
-    assert img_file.split('.')[0][1:4] == mask_file.split('.')[0][1:4] and img_file.split('.')[0][-1] == mask_file.split('.')[0][-1]
+    assert img_file.split('.')[0][1:4] == mask_file.split('.')[0][1:4] and img_file.split('.')[0][-8:-1] == mask_file.split('.')[0][-8:-1]
 
 train_images, val_test_images, train_masks, val_test_masks = train_test_split(
     image_files, mask_files, test_size=0.4, random_state=42)
