@@ -13,8 +13,24 @@ from tensorboardX import SummaryWriter
 import logging
 import torch.backends.cudnn as cudnn
 
+def torch2D_Hausdorff_distance(x,y): # Input be like (Batch,Channel, width,height)
+    # Select max from all channels
+    x_max = x.max(dim=1)[0]
+    y_max = y.max(dim=1)[0]
 
-def structure_loss(pred, mask):
+    x_max = x_max.float()
+    y_max = y_max.float()
+
+    distance_matrix = torch.cdist(x_max,y_max,p=2) # p=2 means Euclidean Distance
+    
+    value1 = distance_matrix.min(2)[0].max(1, keepdim=True)[0]
+    value2 = distance_matrix.min(1)[0].max(1, keepdim=True)[0]
+    
+    value = torch.cat((value1, value2), dim=1)
+    
+    return value.max(1)[0]
+
+def structure_loss(pred, mask, loss="Dice"):
     """
     loss function (ref: F3Net-AAAI-2020)
     """
@@ -27,18 +43,47 @@ def structure_loss(pred, mask):
     # union = ((pred + mask) * weit).sum(dim=(2, 3))
     # wiou = 1 - (inter + 1) / (union - inter + 1)
     # return (wbce + wiou).mean()
-    pred = torch.sigmoid(pred)
-    smooth = 1e-5
+    if loss == "Dice":
 
-    intersection = (pred * mask).sum(dim=(2,3))
-    union = pred.sum(dim=(2,3) + mask.sum(dim=(2,3)))
+        pred = torch.sigmoid(pred)
+        smooth = 1e-5
 
-    dice = (2.0 * intersection + smooth) / (union + smooth)
+        intersection = (pred * mask).sum(dim=(2,3))
+        union = pred.sum(dim=(2,3) + mask.sum(dim=(2,3)))
 
-    dice_loss = 1 - dice
+        dice = (2.0 * intersection + smooth) / (union + smooth)
 
-    return dice_loss.mean()
+        dice_loss = 1 - dice
 
+        return dice_loss.mean()
+    
+    elif loss == "Jaccard":
+        pred = torch.sigmoid(pred)
+        smooth = 1e-6 
+
+        intersection = (pred * mask).sum(dim=(2, 3))
+        union = (pred + mask).sum(dim=(2, 3)) - intersection
+        jaccard = (intersection + smooth) / (union + smooth)
+
+        jaccard_loss = 1 - jaccard
+
+        return jaccard_loss.mean()
+    
+    elif loss == "PPV":
+        pred = torch.sigmoid(pred) > 0.5
+        # True positive = T1 intersect P1
+        true_positive = (pred * mask).sum(dim=(2, 3))
+        # FP = P1 - T1 intersect P1
+        # TP + FP = P1
+        predicted_positive = pred.sum(dim=(2, 3))
+        ppv = true_positive / (predicted_positive + 1e-6)
+        return ppv.mean()
+    
+    elif loss == "HD95":
+        pred = torch.sigmoid(pred) > 0.5
+        hd_loss = torch2D_Hausdorff_distance(pred, mask)
+        return hd_loss
+        
 
 def train(train_loader, model, optimizer, epoch, save_path, writer):
     """
